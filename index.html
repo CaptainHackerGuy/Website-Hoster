@@ -140,6 +140,7 @@
 
         await set(ref(database, 'websites/' + key), websiteData);
         document.getElementById('website-key').textContent = `Your website key is: ${key}`;
+        alert('Website Created Successfully! Check your key to edit/delete it later.')
       } catch (error) {
         console.error("Error uploading website:", error);
         alert("Error uploading website. Check console for details.");
