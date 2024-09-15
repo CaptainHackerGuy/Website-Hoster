@@ -48,6 +48,26 @@
       <p id="website-key">Your website key will appear here after creation.</p>
     </div>
 
+    <!-- Edit Website Section -->
+    <div id="edit-website">
+      <h1>Edit Existing Website</h1>
+      <form id="edit-form">
+        <label for="edit-key">Enter Website Key:</label>
+        <input type="text" id="edit-key" placeholder="Enter key" required><br>
+
+        <label for="edit-html-file">New HTML File:</label>
+        <input type="file" id="edit-html-file" accept=".html"><br>
+
+        <label for="edit-css-file">New CSS File (Optional):</label>
+        <input type="file" id="edit-css-file" accept=".css"><br>
+
+        <label for="edit-js-file">New JavaScript File (Optional):</label>
+        <input type="file" id="edit-js-file" accept=".js"><br>
+
+        <button id="edit-website-btn">Update Website</button>
+      </form>
+    </div>
+
     <!-- Delete Website Section -->
     <div id="delete-website">
       <h1>Delete Website</h1>
@@ -94,6 +114,18 @@
       }
 
       try {
+        // Check if website already exists
+        const snapshot = await get(ref(database, 'websites'));
+        if (snapshot.exists()) {
+          const websites = snapshot.val();
+          for (const key in websites) {
+            if (websites[key].title === websiteUrl) {
+              alert("A website with this URL already exists.");
+              return;
+            }
+          }
+        }
+
         const htmlContent = await readFileContent(htmlFile);
         const cssContent = cssFile ? await readFileContent(cssFile) : '';
         const jsContent = jsFile ? await readFileContent(jsFile) : '';
@@ -111,6 +143,46 @@
       } catch (error) {
         console.error("Error uploading website:", error);
         alert("Error uploading website. Check console for details.");
+      }
+    });
+
+    // Handle website editing
+    document.getElementById('edit-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const key = document.getElementById('edit-key').value;
+      const htmlFile = document.getElementById('edit-html-file').files[0];
+      const cssFile = document.getElementById('edit-css-file').files[0];
+      const jsFile = document.getElementById('edit-js-file').files[0];
+
+      if (!key) {
+        alert("Please enter the key.");
+        return;
+      }
+
+      try {
+        const snapshot = await get(ref(database, 'websites/' + key));
+        if (!snapshot.exists()) {
+          alert("No website found with this key.");
+          return;
+        }
+
+        const websiteData = snapshot.val();
+        const htmlContent = htmlFile ? await readFileContent(htmlFile) : websiteData.html;
+        const cssContent = cssFile ? await readFileContent(cssFile) : websiteData.css;
+        const jsContent = jsFile ? await readFileContent(jsFile) : websiteData.javascript;
+
+        await set(ref(database, 'websites/' + key), {
+          title: websiteData.title,
+          html: htmlContent,
+          css: cssContent,
+          javascript: jsContent,
+        });
+
+        alert("Website updated successfully!");
+      } catch (error) {
+        console.error("Error updating website:", error);
+        alert("Error updating website. Check console for details.");
       }
     });
 
@@ -185,7 +257,7 @@
 
     function displayWebsite(html, css, javascript) {
       const frame = document.getElementById('website-frame');
-      const doc = frame.contentDocument || frame.contentWindow.document; // Use 'doc' instead of 'document'
+      const doc = frame.contentDocument || frame.contentWindow.document;
 
       doc.open();
       doc.write(html);
